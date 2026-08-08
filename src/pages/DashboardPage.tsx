@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Package2,
   TrendingUp,
@@ -13,9 +14,36 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
-import { formatNumber, classNames } from '../utils';
+import { formatNumber, cn } from '../utils';
+import { Button } from '../components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Badge } from '../components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui/table';
+import { Skeleton } from '../components/ui/skeleton';
+import PageTransition from '../components/motion/PageTransition';
+import {
+  StaggerContainer,
+  StaggerItem,
+} from '../components/motion/StaggerContainer';
+import AnimatedCard from '../components/motion/AnimatedCard';
 
 const LOW_STOCK_THRESHOLD = 10;
+
+type AccentColor = 'indigo' | 'emerald' | 'amber' | 'rose';
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
@@ -33,9 +61,12 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => {
     const totalProducts = products.length;
-    const totalStock = products.reduce((sum, p) => sum + (p.current_stock || 0), 0);
+    const totalStock = products.reduce(
+      (sum, p) => sum + (p.current_stock || 0),
+      0,
+    );
     const lowStockCount = products.filter(
-      (p) => p.current_stock > 0 && p.current_stock <= LOW_STOCK_THRESHOLD
+      (p) => p.current_stock > 0 && p.current_stock <= LOW_STOCK_THRESHOLD,
     ).length;
     const outOfStockCount = products.filter((p) => p.current_stock <= 0).length;
     return { totalProducts, totalStock, lowStockCount, outOfStockCount };
@@ -46,7 +77,8 @@ export default function DashboardPage() {
     if (search.trim()) {
       const q = search.toLowerCase().trim();
       list = list.filter(
-        (p) => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
+        (p) =>
+          p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q),
       );
     }
     list.sort((a, b) => {
@@ -68,257 +100,425 @@ export default function DashboardPage() {
     }
   };
 
+  const statConfig = [
+    {
+      label: 'Total Item',
+      value: stats.totalProducts,
+      icon: Package2,
+      accent: 'indigo' as AccentColor,
+      loading: productsLoading,
+      suffix: '',
+      format: false,
+    },
+    {
+      label: 'Total Stok',
+      value: stats.totalStock,
+      icon: TrendingUp,
+      accent: 'emerald' as AccentColor,
+      loading: productsLoading,
+      suffix: '',
+      format: true,
+    },
+    {
+      label: 'Stok Menipis',
+      value: stats.lowStockCount,
+      icon: ArrowUpDown,
+      accent: 'amber' as AccentColor,
+      loading: productsLoading,
+      suffix: stats.lowStockCount ? `≤${LOW_STOCK_THRESHOLD}` : '',
+      format: false,
+    },
+    {
+      label: 'Stok Habis',
+      value: stats.outOfStockCount,
+      icon: TrendingDown,
+      accent: 'rose' as AccentColor,
+      loading: productsLoading,
+      suffix: '',
+      format: false,
+    },
+  ];
+
+  const tableRowVariants: any = {
+    hidden: { opacity: 0, y: 10 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: Math.min(i * 0.02, 0.3),
+        duration: 0.35,
+        ease: [0.16, 1, 0.3, 1] as any,
+      },
+    }),
+  };
+
   return (
-    <div className="space-y-5 sm:space-y-6 lg:space-y-8">
-      <header className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100 text-[11px] font-semibold uppercase tracking-wider mb-2">
+    <PageTransition className='space-y-5 sm:space-y-6 lg:space-y-8'>
+      <motion.header
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className='flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between'
+      >
+        <div className='min-w-0'>
+          <motion.div
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.08, duration: 0.4 }}
+            className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100 text-[11px] font-bold uppercase tracking-[0.14em] mb-2.5'
+          >
+            <span className='w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse' />
             Overview
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight break-words">
+          </motion.div>
+          <h1 className='text-2xl sm:text-3xl lg:text-[2.15rem] font-extrabold text-slate-900 tracking-tight break-words leading-[1.15]'>
             Dashboard Stok Barang
           </h1>
-          <p className="text-sm text-slate-500 mt-1.5">
+          <p className='text-sm text-slate-500 mt-2 leading-relaxed'>
             Selamat datang,{' '}
-            <span className="font-semibold text-slate-700">{user?.name ?? 'User'}</span>
+            <span className='font-bold text-slate-700'>
+              {user?.name ?? 'User'}
+            </span>
+            <span className='text-slate-400 mx-1.5'>•</span>
+            <span>Kelola inventori gudang dengan mudah dan real-time</span>
           </p>
         </div>
         {user?.role === 'admin' && (
-          <Link
-            to="/input-transaction"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:from-indigo-700 hover:to-purple-700 active:scale-[0.99] transition-all w-full sm:w-auto self-start sm:self-auto"
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
           >
-            <ArrowLeftRight className="w-4 h-4" />
-            Input Transaksi Baru
-          </Link>
+            <Button
+              asChild
+              size='lg'
+              variant='gradient'
+              className='w-full sm:w-auto shadow-[0_14px_30px_-12px_rgba(99,102,241,0.55)] px-6 gap-2.5 text-[14px] font-bold'
+            >
+              <Link to='/input-transaction' className='gap-2.5'>
+                <ArrowLeftRight className='w-[18px] h-[18px]' />
+                Input Transaksi Baru
+              </Link>
+            </Button>
+          </motion.div>
         )}
-      </header>
+      </motion.header>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
-        <StatCard
-          label="Total Item"
-          value={stats.totalProducts}
-          icon={<Package2 className="w-5 h-5" />}
-          accent="indigo"
-          loading={productsLoading}
-        />
-        <StatCard
-          label="Total Stok"
-          value={stats.totalStock}
-          formatNumber
-          icon={<TrendingUp className="w-5 h-5" />}
-          accent="emerald"
-          loading={productsLoading}
-        />
-        <StatCard
-          label="Stok Menipis"
-          value={stats.lowStockCount}
-          icon={<ArrowUpDown className="w-5 h-5" />}
-          accent="amber"
-          loading={productsLoading}
-          suffix={stats.lowStockCount ? `≤${LOW_STOCK_THRESHOLD}` : ''}
-        />
-        <StatCard
-          label="Stok Habis"
-          value={stats.outOfStockCount}
-          icon={<TrendingDown className="w-5 h-5" />}
-          accent="rose"
-          loading={productsLoading}
-        />
-      </div>
+      <StaggerContainer
+        className='grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4'
+        delay={0.05}
+      >
+        {statConfig.map((stat) => (
+          <StaggerItem key={stat.label}>
+            <AnimatedCard
+              tiltAmount={4}
+              glowColor={
+                stat.accent === 'indigo'
+                  ? '99, 102, 241'
+                  : stat.accent === 'emerald'
+                    ? '16, 185, 129'
+                    : stat.accent === 'amber'
+                      ? '245, 158, 11'
+                      : '244, 63, 94'
+              }
+            >
+              <StatCard {...stat} />
+            </AnimatedCard>
+          </StaggerItem>
+        ))}
+      </StaggerContainer>
 
-      <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-5 lg:p-6 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-slate-100">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900">
-              Daftar Stok Barang
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Diperbarui secara real-time melalui WebSocket Firebase
-            </p>
-          </div>
-          <div className="relative w-full sm:w-80 flex-shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            <input
-              type="search"
-              placeholder="Cari nama / SKU..."
-              inputMode="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition"
-                aria-label="Bersihkan pencarian"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <Card className='overflow-hidden shadow-[0_2px_20px_-6px_rgba(15,23,42,0.08)] border-slate-200/80'>
+          <CardHeader className='p-4 sm:p-5 lg:p-6 flex flex-col gap-3.5 sm:gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-slate-100/80'>
+            <div className='min-w-0 flex-1'>
+              <CardTitle className='text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2.5'>
+                <span className='w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center ring-1 ring-indigo-100'>
+                  <Package2 className='w-4.5 h-4.5' />
+                </span>
+                Daftar Stok Barang
+              </CardTitle>
+              <CardDescription className='text-xs sm:text-sm mt-2 text-slate-500 leading-relaxed'>
+                Diperbarui secara real-time melalui WebSocket Firebase
+              </CardDescription>
+            </div>
+            <div className='relative w-full sm:w-80 flex-shrink-0 group'>
+              <Search className='absolute left-3.5 top-1/2 -translate-y-1/2 w-[17px] h-[17px] text-slate-400 pointer-events-none group-focus-within:text-indigo-500 transition-colors duration-300' />
+              <Input
+                type='search'
+                placeholder='Cari nama / SKU...'
+                inputMode='search'
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className='h-11 pl-10 pr-10 text-[14px] rounded-xl bg-slate-50/80 hover:bg-white focus:bg-white border-slate-200 hover:border-indigo-200 transition-all duration-200'
+              />
+              {search && (
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 180 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setSearch('')}
+                  className='absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors'
+                  aria-label='Bersihkan pencarian'
+                >
+                  <RefreshCw className='w-3.5 h-3.5' />
+                </motion.button>
+              )}
+            </div>
+          </CardHeader>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[640px]">
-            <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600 sticky top-0 backdrop-blur">
-              <tr>
-                <th scope="col" className="text-left px-4 sm:px-6 py-3.5 pl-4 sm:pl-6 font-semibold uppercase text-[11px] tracking-wider">
-                  <button
-                    onClick={() => toggleSort('name')}
-                    className="flex items-center gap-1.5 hover:text-slate-900 transition"
-                  >
-                    SKU
-                    <SortIndicator active={sortKey === 'name'} asc={sortAsc} />
-                  </button>
-                </th>
-                <th scope="col" className="text-left px-4 sm:px-6 py-3.5 font-semibold uppercase text-[11px] tracking-wider">
-                  <button
-                    onClick={() => toggleSort('name')}
-                    className="flex items-center gap-1.5 hover:text-slate-900 transition whitespace-nowrap"
-                  >
-                    Nama Barang
-                    <SortIndicator active={sortKey === 'name'} asc={sortAsc} />
-                  </button>
-                </th>
-                <th scope="col" className="text-right px-4 sm:px-6 py-3.5 font-semibold uppercase text-[11px] tracking-wider pr-4 sm:pr-6">
-                  <button
-                    onClick={() => toggleSort('stock')}
-                    className="inline-flex items-center gap-1.5 hover:text-slate-900 transition whitespace-nowrap"
-                  >
-                    Sisa Stok
-                    <SortIndicator active={sortKey === 'stock'} asc={sortAsc} />
-                  </button>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {productsLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} aria-hidden>
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="h-4 bg-slate-100 rounded w-20 sm:w-24 animate-pulse" />
-                    </td>
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="h-4 bg-slate-100 rounded w-40 sm:w-56 animate-pulse" />
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 text-right">
-                      <div className="h-6 w-14 sm:w-16 bg-slate-100 rounded-md animate-pulse ml-auto" />
-                    </td>
-                  </tr>
-                ))
-              ) : filteredProducts.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="px-4 sm:px-6 py-12 sm:py-16 text-center">
-                    <Package2 className="w-12 h-12 mx-auto mb-3 opacity-30 text-slate-400" />
-                    <p className="text-sm font-semibold text-slate-600">
-                      {search ? 'Barang tidak ditemukan' : 'Belum ada data barang'}
-                    </p>
-                    {search ? (
-                      <button
-                        onClick={() => setSearch('')}
-                        className="mt-2 text-xs text-indigo-600 font-semibold hover:text-indigo-700 hover:underline"
+          <div className='overflow-x-auto'>
+            <Table className='min-w-[640px]'>
+              <TableHeader className='sticky top-0 bg-white/90 backdrop-blur-md'>
+                <TableRow className='hover:bg-transparent border-b border-slate-100'>
+                  <TableHead className='text-left px-4 sm:px-6 py-3.5 pl-4 sm:pl-6 w-[18%]'>
+                    <button
+                      onClick={() => toggleSort('name')}
+                      className='flex items-center gap-1.5 hover:text-slate-900 transition-colors duration-200 group'
+                    >
+                      SKU
+                      <SortIndicator
+                        active={sortKey === 'name'}
+                        asc={sortAsc}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead className='text-left px-4 sm:px-6 py-3.5'>
+                    <button
+                      onClick={() => toggleSort('name')}
+                      className='flex items-center gap-1.5 hover:text-slate-900 transition-colors duration-200 whitespace-nowrap group'
+                    >
+                      Nama Barang
+                      <SortIndicator
+                        active={sortKey === 'name'}
+                        asc={sortAsc}
+                      />
+                    </button>
+                  </TableHead>
+                  <TableHead className='text-right px-4 sm:px-6 py-3.5 pr-4 sm:pr-6 w-[20%]'>
+                    <button
+                      onClick={() => toggleSort('stock')}
+                      className='inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors duration-200 whitespace-nowrap group ml-auto'
+                    >
+                      Sisa Stok
+                      <SortIndicator
+                        active={sortKey === 'stock'}
+                        asc={sortAsc}
+                      />
+                    </button>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {productsLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow
+                      key={i}
+                      aria-hidden
+                      className='hover:bg-transparent'
+                    >
+                      <TableCell className='px-4 sm:px-6 py-4'>
+                        <Skeleton className='h-4 w-20 sm:w-24' />
+                      </TableCell>
+                      <TableCell className='px-4 sm:px-6 py-4'>
+                        <Skeleton className='h-4 w-40 sm:w-56' />
+                      </TableCell>
+                      <TableCell className='px-4 sm:px-6 py-4 text-right'>
+                        <Skeleton className='h-7 w-14 sm:w-16 rounded-lg ml-auto' />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredProducts.length === 0 ? (
+                  <TableRow className='hover:bg-transparent'>
+                    <TableCell
+                      colSpan={3}
+                      className='px-4 sm:px-6 py-14 sm:py-18'
+                    >
+                      <div className='text-center'>
+                        <motion.div
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{
+                            type: 'spring',
+                            stiffness: 200,
+                            damping: 20,
+                          }}
+                          className='w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-50 flex items-center justify-center ring-1 ring-slate-100'
+                        >
+                          <Package2 className='w-8 h-8 opacity-50 text-slate-400' />
+                        </motion.div>
+                        <p className='text-sm font-bold text-slate-600 mb-1.5'>
+                          {search
+                            ? 'Barang tidak ditemukan'
+                            : 'Belum ada data barang'}
+                        </p>
+                        {search ? (
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => setSearch('')}
+                            className='text-xs text-indigo-600 font-bold hover:text-indigo-700 hover:bg-indigo-50 mt-1 h-auto py-1.5'
+                          >
+                            Bersihkan pencarian
+                          </Button>
+                        ) : (
+                          <p className='text-xs text-slate-400 mt-1.5 max-w-xs mx-auto leading-relaxed'>
+                            Tambahkan barang melalui Input Transaksi atau import
+                            ke Realtime Database
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredProducts.map((p, i) => {
+                    const state =
+                      p.current_stock <= 0
+                        ? {
+                            label: 'Habis',
+                            variant: 'rose' as const,
+                            cls: 'bg-rose-50 text-rose-700 ring-rose-200',
+                          }
+                        : p.current_stock <= LOW_STOCK_THRESHOLD
+                          ? {
+                              label: 'Menipis',
+                              variant: 'amber' as const,
+                              cls: 'bg-amber-50 text-amber-700 ring-amber-200',
+                            }
+                          : {
+                              label: 'Aman',
+                              variant: 'emerald' as const,
+                              cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                            };
+                    return (
+                      <motion.tr
+                        key={p.id}
+                        custom={i}
+                        variants={tableRowVariants}
+                        initial='hidden'
+                        animate='visible'
+                        whileHover={{
+                          backgroundColor: 'rgba(248, 250, 252, 0.9)',
+                        }}
+                        className='group border-b border-slate-100'
                       >
-                        Bersihkan pencarian
-                      </button>
-                    ) : (
-                      <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                        Tambahkan barang melalui Input Transaksi atau import ke Realtime Database
-                      </p>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                filteredProducts.map((p) => {
-                  const state =
-                    p.current_stock <= 0
-                      ? { label: 'Habis', cls: 'bg-rose-50 text-rose-700 ring-rose-200' }
-                      : p.current_stock <= LOW_STOCK_THRESHOLD
-                      ? { label: 'Menipis', cls: 'bg-amber-50 text-amber-700 ring-amber-200' }
-                      : { label: 'Aman', cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200' };
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-4 sm:px-6 py-3 sm:py-3.5 whitespace-nowrap">
-                        <code className="text-[11px] sm:text-xs font-mono text-slate-600 bg-slate-100 px-2 py-1 rounded-md ring-1 ring-slate-200/70">
-                          {p.id}
-                        </code>
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-3.5">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
-                          <span className="font-semibold text-slate-900 leading-snug break-words">
-                            {p.name}
-                          </span>
-                          <span
-                            className={classNames(
-                              'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset w-fit',
-                              state.cls
+                        <TableCell className='px-4 sm:px-6 py-3.5 sm:py-4 whitespace-nowrap'>
+                          <motion.code
+                            whileHover={{ scale: 1.03 }}
+                            className='text-[11px] sm:text-xs font-mono text-slate-600 bg-slate-100/80 group-hover:bg-slate-100 px-2.5 py-1.5 rounded-lg ring-1 ring-slate-200/70 inline-block transition-colors duration-200'
+                          >
+                            {p.id}
+                          </motion.code>
+                        </TableCell>
+                        <TableCell className='px-4 sm:px-6 py-3.5 sm:py-4'>
+                          <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3.5'>
+                            <motion.span
+                              whileHover={{ x: 2 }}
+                              className='font-bold text-slate-900 leading-snug break-words text-[14.5px]'
+                            >
+                              {p.name}
+                            </motion.span>
+                            <Badge
+                              variant={state.variant}
+                              className='text-[10px] font-extrabold uppercase tracking-[0.1em] px-2.5 py-1 w-fit'
+                            >
+                              {state.label}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className='px-4 sm:px-6 py-3.5 sm:py-4 text-right whitespace-nowrap'>
+                          <motion.span
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            transition={{
+                              delay: Math.min(i * 0.015, 0.2),
+                              type: 'spring',
+                              stiffness: 300,
+                              damping: 24,
+                            }}
+                            className={cn(
+                              'inline-flex items-center px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-sm sm:text-[15px] font-extrabold ring-1 ring-inset',
+                              state.cls,
                             )}
                           >
-                            {state.label}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-3.5 text-right whitespace-nowrap">
-                        <span
-                          className={classNames(
-                            'inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-sm sm:text-base font-bold ring-1 ring-inset',
-                            state.cls
-                          )}
-                        >
-                          {formatNumber(p.current_stock)}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {!productsLoading && filteredProducts.length > 0 && (
-          <div className="px-4 sm:px-6 py-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[11px] sm:text-xs text-slate-500 bg-slate-50/50">
-            <span>
-              Menampilkan{' '}
-              <strong className="text-slate-700">{filteredProducts.length}</strong> dari{' '}
-              <strong className="text-slate-700">{products.length}</strong> item barang
-            </span>
-            <span>{search && '· Hasil terfilter'}</span>
+                            {formatNumber(p.current_stock)}
+                          </motion.span>
+                        </TableCell>
+                      </motion.tr>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
           </div>
-        )}
-      </section>
-    </div>
+
+          {!productsLoading && filteredProducts.length > 0 && (
+            <div className='px-4 sm:px-6 py-3.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[11px] sm:text-xs text-slate-500 bg-slate-50/70'>
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className='font-medium'
+              >
+                Menampilkan{' '}
+                <strong className='text-slate-700 text-[12.5px]'>
+                  {filteredProducts.length}
+                </strong>{' '}
+                dari{' '}
+                <strong className='text-slate-700 text-[12.5px]'>
+                  {products.length}
+                </strong>{' '}
+                item barang
+              </motion.span>
+              <span>
+                {search && (
+                  <span className='inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100 text-[11px] font-bold'>
+                    · Hasil terfilter
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
+        </Card>
+      </motion.section>
+    </PageTransition>
   );
 }
 
 function SortIndicator({ active, asc }: { active: boolean; asc: boolean }) {
   if (!active) {
-    return <RefreshCw className="w-3 h-3 opacity-0 group-hover:opacity-60" />;
+    return (
+      <RefreshCw className='w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity' />
+    );
   }
   return asc ? (
-    <ArrowDownAZ className="w-3 h-3 text-indigo-500" />
+    <ArrowDownAZ className='w-3.5 h-3.5 text-indigo-500' strokeWidth={2.5} />
   ) : (
-    <ArrowUpAZ className="w-3 h-3 text-indigo-500" />
+    <ArrowUpAZ className='w-3.5 h-3.5 text-indigo-500' strokeWidth={2.5} />
   );
 }
 
 interface StatCardProps {
   label: string;
   value: number;
-  icon: React.ReactNode;
-  accent: 'indigo' | 'emerald' | 'amber' | 'rose';
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  accent: AccentColor;
   loading?: boolean;
-  formatNumber?: boolean;
+  format?: boolean;
   suffix?: string;
 }
 
 function StatCard({
   label,
   value,
-  icon,
+  icon: Icon,
   accent,
   loading,
-  formatNumber: fmt,
+  format: fmt,
   suffix,
 }: StatCardProps) {
   const accents = {
@@ -333,52 +533,73 @@ function StatCard({
     amber: 'text-amber-700',
     rose: 'text-rose-700',
   } as const;
+  const glowColors = {
+    indigo: 'bg-indigo-300',
+    emerald: 'bg-emerald-300',
+    amber: 'bg-amber-300',
+    rose: 'bg-rose-300',
+  } as const;
+
   return (
-    <div className="relative bg-white rounded-2xl border border-slate-200 shadow-sm p-3.5 sm:p-4 lg:p-5 overflow-hidden">
+    <Card className='relative overflow-hidden border-slate-200/80 shadow-[0_2px_14px_-6px_rgba(15,23,42,0.07)] hover:shadow-[0_10px_40px_-14px_rgba(15,23,42,0.15)] transition-shadow duration-500'>
       <div
-        className={classNames(
-          'absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-40 blur-2xl',
-          accent === 'indigo' && 'bg-indigo-300',
-          accent === 'emerald' && 'bg-emerald-300',
-          accent === 'amber' && 'bg-amber-300',
-          accent === 'rose' && 'bg-rose-300'
+        className={cn(
+          'absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-40 blur-[30px]',
+          glowColors[accent],
         )}
         aria-hidden
       />
-      <div className="relative flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] sm:text-xs font-semibold text-slate-500 truncate">
-            {label}
-          </p>
-          {loading ? (
-            <div className="mt-2 h-7 sm:h-8 w-14 sm:w-20 bg-slate-100 rounded-lg animate-pulse" />
-          ) : (
-            <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 min-w-0">
-              <span
-                className={classNames(
-                  'text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight truncate',
-                  textColors[accent]
-                )}
+      <CardContent className='p-4 sm:p-5 lg:p-5.5'>
+        <div className='relative flex items-start justify-between gap-2.5'>
+          <div className='min-w-0 flex-1'>
+            <p className='text-[11px] sm:text-xs font-bold text-slate-500 truncate uppercase tracking-[0.04em]'>
+              {label}
+            </p>
+            {loading ? (
+              <Skeleton className='mt-2.5 h-8 sm:h-9 w-16 sm:w-20 rounded-xl' />
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
+                className='mt-2 flex items-baseline gap-1.5 min-w-0'
               >
-                {fmt ? formatNumber(value) : value}
-              </span>
-              {suffix && (
-                <span className="text-[10px] sm:text-xs text-slate-400 font-medium flex-shrink-0">
-                  {suffix}
-                </span>
-              )}
-            </div>
-          )}
+                <motion.span
+                  key={value}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                  className={cn(
+                    'text-xl sm:text-2xl lg:text-3xl font-black tracking-tight truncate',
+                    textColors[accent],
+                  )}
+                >
+                  {fmt ? formatNumber(value) : value}
+                </motion.span>
+                {suffix && (
+                  <span className='text-[10px] sm:text-xs text-slate-400 font-semibold flex-shrink-0'>
+                    {suffix}
+                  </span>
+                )}
+              </motion.div>
+            )}
+          </div>
+          <motion.div
+            whileHover={{ scale: 1.1, rotate: -6 }}
+            whileTap={{ scale: 0.92 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            className={cn(
+              'p-2.5 sm:p-3 rounded-xl ring-1 ring-inset flex-shrink-0 shadow-sm',
+              accents[accent],
+            )}
+          >
+            <Icon
+              className='w-[19px] h-[19px] sm:w-5 sm:h-5'
+              strokeWidth={2.2}
+            />
+          </motion.div>
         </div>
-        <div
-          className={classNames(
-            'p-2 sm:p-2.5 rounded-xl ring-1 ring-inset flex-shrink-0',
-            accents[accent]
-          )}
-        >
-          {icon}
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

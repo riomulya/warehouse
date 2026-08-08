@@ -1,3 +1,10 @@
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]): string {
+  return twMerge(clsx(inputs));
+}
+
 export function formatDate(timestamp: number | undefined): string {
   if (!timestamp) return '-';
   try {
@@ -16,8 +23,4 @@ export function formatDate(timestamp: number | undefined): string {
 export function formatNumber(n: number): string {
   if (typeof n !== 'number' || isNaN(n)) return '0';
   return n.toLocaleString('id-ID');
-}
-
-export function classNames(...classes: (string | false | undefined | null)[]): string {
-  return classes.filter(Boolean).join(' ');
 }

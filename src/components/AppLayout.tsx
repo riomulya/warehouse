@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate, Outlet } from 'react-router-dom';
+import {
+  Link,
+  NavLink,
+  useNavigate,
+  Outlet,
+  useLocation,
+} from 'react-router-dom';
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -10,15 +16,30 @@ import {
   Warehouse,
   ChevronRight,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
-import { classNames } from '../utils';
+import { cn } from '../utils';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Separator } from './ui/separator';
+import { Avatar, AvatarFallback } from './ui/avatar';
 
 const SIDEBAR_WIDTH = 'w-72';
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((word) => word[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export default function AppLayout() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -40,6 +61,10 @@ export default function AppLayout() {
     };
   }, [mobileOpen]);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
   const handleLogout = async () => {
     setMobileOpen(false);
     await logout();
@@ -52,18 +77,21 @@ export default function AppLayout() {
       label: 'Dashboard Stok',
       icon: LayoutDashboard,
       roles: ['admin', 'management'],
+      color: 'indigo',
     },
     {
       to: '/input-transaction',
       label: 'Input Transaksi',
       icon: ArrowLeftRight,
       roles: ['admin'],
+      color: 'emerald',
     },
     {
       to: '/transaction-logs',
       label: 'Log Transaksi',
       icon: ScrollText,
       roles: ['management'],
+      color: 'purple',
     },
   ];
 
@@ -71,130 +99,248 @@ export default function AppLayout() {
     user ? item.roles.includes(user.role) : false,
   );
 
+  const sidebarNavVariants: any = {
+    hidden: { opacity: 0, x: -20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      x: 0,
+      transition: {
+        delay: 0.08 + i * 0.05,
+        duration: 0.35,
+        ease: [0.16, 1, 0.3, 1] as any,
+      },
+    }),
+  };
+
   return (
-    <div className='min-h-screen w-full bg-slate-50 text-slate-900 antialiased'>
-      <button
+    <div className='min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 text-slate-900 antialiased relative overflow-hidden'>
+      <div className='fixed inset-0 pointer-events-none overflow-hidden -z-10'>
+        <div className='absolute top-0 -right-40 w-96 h-96 bg-indigo-300/20 rounded-full blur-3xl' />
+        <div className='absolute bottom-0 -left-40 w-96 h-96 bg-purple-300/15 rounded-full blur-3xl' />
+      </div>
+
+      <Button
         onClick={() => setMobileOpen(true)}
-        className='fixed top-[max(env(safe-area-inset-top),0.75rem)] left-[max(env(safe-area-inset-left),0.75rem)] z-40 p-2.5 rounded-xl bg-white/95 backdrop-blur shadow-lg ring-1 ring-slate-200 text-slate-700 md:hidden flex items-center gap-2'
+        variant='outline'
+        size='sm'
+        className='fixed top-[max(env(safe-area-inset-top),0.75rem)] left-[max(env(safe-area-inset-left),0.75rem)] z-40 md:hidden bg-white/95 backdrop-blur-lg shadow-lg shadow-slate-200/60 border-slate-200 gap-2.5'
         aria-label='Buka menu'
       >
-        <Menu className='w-5 h-5' />
+        <Menu className='w-4.5 h-4.5' />
         <span className='text-sm font-semibold pr-1'>Menu</span>
-      </button>
+      </Button>
 
-      <div
-        aria-hidden={!mobileOpen}
-        className={classNames(
-          'fixed inset-0 z-[55] md:hidden bg-slate-900/60 backdrop-blur-sm transition-opacity duration-200',
-          mobileOpen
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none',
-        )}
-        onClick={() => setMobileOpen(false)}
-      />
-
-      <aside
-        role='navigation'
-        aria-label='Sidebar navigasi'
-        className={classNames(
-          'fixed top-0 left-0 z-[60] h-[100dvh] shrink-0 bg-white border-r border-slate-200 shadow-sm',
-          SIDEBAR_WIDTH,
-          'flex flex-col transition-transform duration-300 ease-out',
-          '-translate-x-full md:translate-x-0',
-          mobileOpen && 'translate-x-0',
-        )}
-        style={{
-          paddingTop: 'env(safe-area-inset-top)',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-          paddingLeft: 'env(safe-area-inset-left)',
-        }}
-      >
-        <div className='px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-2'>
-          <Link
-            to='/'
-            className='flex items-center gap-3 min-w-0'
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            aria-hidden
+            className='fixed inset-0 z-[55] md:hidden bg-slate-900/60 backdrop-blur-md'
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
             onClick={() => setMobileOpen(false)}
-          >
-            <div className='w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/30 flex-shrink-0'>
-              <Warehouse className='w-5 h-5' />
-            </div>
-            <div className='min-w-0'>
-              <h1 className='text-base font-bold text-slate-900 leading-tight truncate'>
-                Warehouse M
-              </h1>
-              <p className='text-xs text-slate-500 mt-0.5'>Management System</p>
-            </div>
-          </Link>
-          <button
-            onClick={() => setMobileOpen(false)}
-            className='md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition'
-            aria-label='Tutup menu'
-          >
-            <X className='w-5 h-5' />
-          </button>
-        </div>
+          />
+        )}
+      </AnimatePresence>
 
-        <nav className='flex-1 p-3 space-y-1 overflow-y-auto'>
-          <p className='px-3 pt-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400'>
-            Menu Utama
-          </p>
-          {visibleNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                classNames(
-                  'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 shadow-sm ring-1 ring-inset ring-indigo-100'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
-                )
-              }
+      <AnimatePresence>
+        {(mobileOpen || typeof window !== 'undefined') && (
+          <motion.aside
+            role='navigation'
+            aria-label='Sidebar navigasi'
+            className={cn(
+              'fixed top-0 left-0 z-[60] h-[100dvh] shrink-0 bg-white/90 backdrop-blur-xl border-r border-slate-200/80 shadow-[0_0_50px_-20px_rgba(15,23,42,0.15)]',
+              SIDEBAR_WIDTH,
+              'flex flex-col md:translate-x-0',
+              'md:block',
+              mobileOpen ? 'block' : 'hidden md:block',
+            )}
+            initial={false}
+            animate={
+              typeof window !== 'undefined' && window.innerWidth < 768
+                ? mobileOpen
+                  ? { x: 0 }
+                  : { x: '-100%' }
+                : { x: 0 }
+            }
+            transition={
+              typeof window !== 'undefined' && window.innerWidth < 768
+                ? { type: 'spring', stiffness: 300, damping: 32, mass: 0.9 }
+                : { type: false }
+            }
+            style={{
+              paddingTop: 'env(safe-area-inset-top)',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+              paddingLeft: 'env(safe-area-inset-left)',
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05, duration: 0.4 }}
+              className='px-5 py-4 border-b border-slate-200/80 flex items-center justify-between gap-2'
             >
-              <item.icon
-                className={classNames(
-                  'w-5 h-5 flex-shrink-0 transition-transform',
-                  'group-hover:scale-105',
-                )}
-              />
-              <span className='flex-1 truncate'>{item.label}</span>
-              <ChevronRight className='w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-current/60' />
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className='p-3 border-t border-slate-200 space-y-2'>
-          <div className='px-3.5 py-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/80 ring-1 ring-inset ring-slate-200'>
-            <p className='text-sm font-semibold text-slate-900 truncate'>
-              {user?.name || 'User'}
-            </p>
-            <div className='mt-1 flex items-center gap-2'>
-              <span
-                className={classNames(
-                  'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset',
-                  user?.role === 'admin'
-                    ? 'bg-indigo-50 text-indigo-700 ring-indigo-200'
-                    : 'bg-purple-50 text-purple-700 ring-purple-200',
-                )}
+              <Link to='/' className='flex items-center gap-3 min-w-0 group'>
+                <motion.div
+                  whileHover={{ scale: 1.05, rotate: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  className='w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 flex-shrink-0 group-hover:shadow-indigo-500/40 transition-shadow duration-300'
+                >
+                  <Warehouse className='w-5 h-5' />
+                </motion.div>
+                <div className='min-w-0'>
+                  <h1 className='text-base font-extrabold text-slate-900 leading-tight truncate bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent'>
+                    Warehouse M
+                  </h1>
+                  <p className='text-xs text-slate-500 mt-0.5 font-medium'>
+                    Management System
+                  </p>
+                </div>
+              </Link>
+              <Button
+                onClick={() => setMobileOpen(false)}
+                variant='ghost'
+                size='icon'
+                className='md:hidden h-9 w-9 text-slate-500 hover:text-slate-700'
+                aria-label='Tutup menu'
               >
-                {user?.role || ''}
-              </span>
-              <p className='text-[11px] text-slate-500 truncate'>
-                {user?.email || ''}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className='w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 hover:ring-1 hover:ring-red-200 transition-all'
-          >
-            <LogOut className='w-5 h-5 flex-shrink-0' />
-            Logout
-          </button>
-        </div>
-      </aside>
+                <X className='w-5 h-5' />
+              </Button>
+            </motion.div>
+
+            <nav className='flex-1 p-3 space-y-1 overflow-y-auto'>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className='px-3 pt-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400'
+              >
+                Menu Utama
+              </motion.p>
+              {visibleNavItems.map((item, i) => (
+                <motion.div
+                  key={item.to}
+                  custom={i}
+                  variants={sidebarNavVariants}
+                  initial='hidden'
+                  animate='visible'
+                >
+                  <NavLink
+                    to={item.to}
+                    end={item.to === '/'}
+                    onClick={() => setMobileOpen(false)}
+                    className={({ isActive }) =>
+                      cn(
+                        'group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 overflow-hidden',
+                        isActive
+                          ? 'bg-gradient-to-r from-indigo-50 via-purple-50/70 to-transparent text-indigo-700 shadow-[0_2px_12px_-4px_rgba(99,102,241,0.25)] ring-1 ring-inset ring-indigo-100'
+                          : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900',
+                      )
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <motion.div
+                          layoutId='nav-indicator'
+                          className={cn(
+                            'absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b from-indigo-500 to-purple-500',
+                            isActive ? 'opacity-100' : 'opacity-0',
+                          )}
+                          transition={{
+                            type: 'spring',
+                            stiffness: 350,
+                            damping: 30,
+                          }}
+                        />
+                        <motion.div
+                          whileHover={{ scale: 1.12, rotate: -3 }}
+                          whileTap={{ scale: 0.92 }}
+                          transition={{
+                            type: 'spring',
+                            stiffness: 400,
+                            damping: 20,
+                          }}
+                          className={cn(
+                            'w-5 h-5 flex-shrink-0 transition-colors duration-200',
+                          )}
+                        >
+                          <item.icon className='w-full h-full' />
+                        </motion.div>
+                        <span className='flex-1 truncate'>{item.label}</span>
+                        <motion.div
+                          initial={false}
+                          animate={{
+                            opacity: isActive ? 1 : 0,
+                            x: isActive ? 0 : -8,
+                          }}
+                          transition={{ duration: 0.25 }}
+                          className='text-current/60'
+                        >
+                          <ChevronRight className='w-4 h-4' />
+                        </motion.div>
+                      </>
+                    )}
+                  </NavLink>
+                </motion.div>
+              ))}
+            </nav>
+
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className='p-3 border-t border-slate-200/80 space-y-2.5'
+            >
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                className='px-3.5 py-3.5 rounded-2xl bg-gradient-to-br from-slate-50 via-indigo-50/40 to-slate-100/80 ring-1 ring-inset ring-slate-200/80 relative overflow-hidden group'
+              >
+                <div className='absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-200/40 to-purple-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3 opacity-0 group-hover:opacity-100 transition-opacity duration-500' />
+                <div className='relative flex items-start gap-3'>
+                  <Avatar className='h-10 w-10 rounded-xl shadow-md shadow-slate-200'>
+                    <AvatarFallback className='text-[13px] bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600'>
+                      {user?.name ? getInitials(user.name) : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className='min-w-0 flex-1'>
+                    <p className='text-sm font-bold text-slate-900 truncate leading-tight'>
+                      {user?.name || 'User'}
+                    </p>
+                    <div className='mt-1.5 flex items-center gap-2 flex-wrap'>
+                      <Badge
+                        variant={user?.role === 'admin' ? 'indigo' : 'purple'}
+                        className='text-[10px] font-extrabold uppercase tracking-wider px-2'
+                      >
+                        {user?.role || ''}
+                      </Badge>
+                      <p className='text-[11px] text-slate-500 truncate font-medium'>
+                        {user?.email || ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              <Separator className='opacity-60' />
+
+              <Button
+                onClick={handleLogout}
+                variant='ghost'
+                className='w-full flex items-center justify-start gap-3 px-3.5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-red-50 hover:text-red-600 hover:ring-1 hover:ring-red-200 transition-all duration-200 rounded-xl h-auto'
+              >
+                <motion.div
+                  whileHover={{ x: -2 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                >
+                  <LogOut className='w-5 h-5 flex-shrink-0' />
+                </motion.div>
+                Logout
+              </Button>
+            </motion.div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
       <main
         className='md:ml-72 min-h-[100dvh] flex flex-col'
