@@ -1,0 +1,31 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      "$uid": {
+        ".read": "auth !== null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "false",
+        ".validate": "newData.hasChildren(['email', 'name', 'role']) && (newData.child('role').val() === 'admin' || newData.child('role').val() === 'management')"
+      }
+    },
+
+    "products": {
+      ".read": "auth !== null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'management')",
+      "$sku": {
+        ".write": "auth !== null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        ".validate": "newData.hasChildren(['name', 'current_stock']) && newData.child('current_stock').isNumber() && newData.child('current_stock').val() >= 0"
+      }
+    },
+
+    "transactions": {
+      ".read": "auth !== null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'management')",
+      ".write": "auth !== null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      ".indexOn": ["created_at", "product_id", "type"],
+      "$txId": {
+        ".validate": "newData.hasChildren(['product_id', 'product_name', 'type', 'qty', 'created_at', 'created_by']) && (newData.child('type').val() === 'IN' || newData.child('type').val() === 'OUT') && newData.child('qty').isNumber() && newData.child('qty').val() > 0"
+      }
+    }
+  }
+}
