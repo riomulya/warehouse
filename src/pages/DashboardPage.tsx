@@ -441,8 +441,7 @@ export default function DashboardPage() {
                 Daftar Stok Barang
               </CardTitle>
               <CardDescription className='text-xs sm:text-sm mt-2 text-slate-500 leading-relaxed'>
-                Diperbarui secara real-time • klik ikon pin untuk sematkan
-                barang di atas
+                Diperbarui secara real-time
               </CardDescription>
             </div>
             <div className='relative w-full sm:w-80 flex-shrink-0 group'>
