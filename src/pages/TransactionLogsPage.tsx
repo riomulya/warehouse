@@ -23,6 +23,7 @@ import {
   CardDescription,
 } from '../components/ui/card';
 import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import {
@@ -228,7 +229,7 @@ export default function TransactionLogsPage() {
             </DialogDescription>
           </DialogHeader>
           {selected && (
-            <div className='space-y-5 py-2'>
+            <div className='px-6 sm:px-7 py-4 sm:py-5 space-y-[18px] sm:space-y-5'>
               <DetailRow
                 label='Jenis Transaksi'
                 value={
@@ -312,12 +313,14 @@ export default function TransactionLogsPage() {
                   </div>
                 }
               />
-              <Separator className='opacity-60' />
-              <div>
-                <p className='text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mb-2 pl-0.5'>
+              <div className='py-1.5'>
+                <Separator className='opacity-60' />
+              </div>
+              <div className='space-y-2.5'>
+                <p className='text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em]'>
                   Keterangan Tambahan
                 </p>
-                <div className='rounded-xl bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 border border-slate-200 p-4 text-sm text-slate-700 min-h-[70px] leading-relaxed'>
+                <div className='px-4 py-3 rounded-xl bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 border border-slate-200 p-4 sm:p-5 text-sm text-slate-700 min-h-10 leading-relaxed shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]'>
                   {selected.notes || (
                     <span className='text-slate-400 italic'>
                       Tidak ada keterangan untuk transaksi ini
@@ -325,11 +328,11 @@ export default function TransactionLogsPage() {
                   )}
                 </div>
               </div>
-              <div>
-                <p className='text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] mb-2 pl-0.5'>
+              <div className='space-y-2.5'>
+                <p className='text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em]'>
                   ID Transaksi
                 </p>
-                <code className='text-xs bg-slate-100 px-3 py-2 rounded-lg text-slate-600 font-mono break-all ring-1 ring-slate-200 block'>
+                <code className='text-xs bg-slate-100 px-4 py-3 rounded-xl text-slate-600 font-mono break-all ring-1 ring-slate-200 block shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]'>
                   {selected.id}
                 </code>
               </div>
@@ -436,17 +439,17 @@ export default function TransactionLogsPage() {
         transition={{ delay: 0.22, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
       >
         <Card className='overflow-hidden shadow-[0_2px_24px_-10px_rgba(15,23,42,0.1)] border-slate-200/80'>
-          <CardHeader className='p-4 md:p-5 border-b border-slate-100/80 space-y-4'>
-            <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-3'>
-              <div className='flex items-center gap-2.5'>
-                <span className='w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center ring-1 ring-indigo-100'>
+          <CardHeader className='p-4 sm:p-5 md:p-6 border-b border-slate-100/80 space-y-4 sm:space-y-5'>
+            <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4'>
+              <div className='flex items-start sm:items-center gap-2.5'>
+                <span className='w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center ring-1 ring-indigo-100 flex-shrink-0 mt-0.5 sm:mt-0'>
                   <Filter className='w-4 h-4' />
                 </span>
-                <div>
+                <div className='min-w-0'>
                   <CardTitle className='text-base font-extrabold text-slate-900'>
                     Filter Data Transaksi
                   </CardTitle>
-                  <CardDescription className='text-xs sm:text-sm mt-0.5'>
+                  <CardDescription className='text-xs sm:text-sm mt-0.5 leading-relaxed'>
                     Saring data berdasarkan pencarian, jenis, dan tanggal
                   </CardDescription>
                 </div>
@@ -455,46 +458,78 @@ export default function TransactionLogsPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={resetFilters}
-                className='text-xs font-bold text-slate-500 hover:text-indigo-600 self-end md:self-auto transition-colors inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-indigo-50 hover:ring-1 hover:ring-indigo-100'
+                className='text-xs font-bold text-slate-500 hover:text-indigo-600 self-start md:self-auto transition-colors inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:ring-1 hover:ring-indigo-100 w-full md:w-auto'
               >
-                <RefreshCw className='w-3.5 h-3.5' />
+                <RefreshCw className='w-3.5 h-3.5 flex-shrink-0' />
                 Reset semua filter
               </motion.button>
             </div>
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5'>
-              <div className='relative sm:col-span-2 lg:col-span-2 group'>
-                <Search className='absolute left-3.5 top-1/2 -translate-y-1/2 w-[17px] h-[17px] text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300' />
-                <Input
-                  type='text'
-                  placeholder='Cari nama barang, SKU, admin, keterangan...'
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className='h-11 pl-10 pr-4 text-[14px] rounded-xl bg-slate-50/80 hover:bg-white focus:bg-white border-slate-200 hover:border-indigo-200 transition-all duration-200'
-                />
+            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 sm:gap-3.5 md:gap-4 items-end'>
+              <div className='relative group sm:col-span-2 md:col-span-3'>
+                <Label
+                  htmlFor='tx-search'
+                  className='text-[11.5px] font-bold text-slate-500 mb-1.5 block pl-0.5'
+                >
+                  Pencarian
+                </Label>
+                <div className='relative'>
+                  <Search className='absolute left-3.5 top-1/2 -translate-y-1/2 w-[17px] h-[17px] text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300 pointer-events-none' />
+                  <Input
+                    id='tx-search'
+                    type='text'
+                    placeholder='Cari nama barang, SKU, admin, keterangan...'
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className='h-11 pl-10 pr-4 text-[14px] rounded-xl bg-slate-50/80 hover:bg-white focus:bg-white border-slate-200 hover:border-indigo-200 transition-all duration-200'
+                  />
+                </div>
               </div>
-              <Select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
-                className='h-11 text-[14px] rounded-xl bg-slate-50/80 hover:bg-white focus:bg-white border-slate-200 hover:border-indigo-200 transition-all duration-200'
-              >
-                <option value='ALL'>Semua Jenis</option>
-                <option value='IN'>Barang Masuk</option>
-                <option value='OUT'>Barang Keluar</option>
-              </Select>
-              <div className='flex gap-2.5'>
+              <div className='sm:col-span-2 md:col-span-1'>
+                <Label
+                  htmlFor='tx-type'
+                  className='text-[11.5px] font-bold text-slate-500 mb-1.5 block pl-0.5'
+                >
+                  Jenis Transaksi
+                </Label>
+                <Select
+                  id='tx-type'
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
+                  className='h-11 text-[14px] rounded-xl bg-slate-50/80 hover:bg-white focus:bg-white border-slate-200 hover:border-indigo-200 transition-all duration-200'
+                >
+                  <option value='ALL'>Semua Jenis</option>
+                  <option value='IN'>Barang Masuk</option>
+                  <option value='OUT'>Barang Keluar</option>
+                </Select>
+              </div>
+              <div className='sm:col-span-1 md:col-span-1'>
+                <Label
+                  htmlFor='tx-date-start'
+                  className='text-[11.5px] font-bold text-slate-500 mb-1.5 block pl-0.5'
+                >
+                  Tanggal Mulai
+                </Label>
                 <Input
+                  id='tx-date-start'
                   type='date'
-                  title='Tanggal mulai'
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className='h-11 flex-1 min-w-0 px-3 text-[14px] rounded-xl bg-slate-50/80 hover:bg-white focus:bg-white border-slate-200 hover:border-indigo-200 transition-all duration-200'
+                  className='h-11 px-3 text-[14px] rounded-xl bg-slate-50/80 hover:bg-white focus:bg-white border-slate-200 hover:border-indigo-200 transition-all duration-200'
                 />
+              </div>
+              <div className='sm:col-span-1 md:col-span-1'>
+                <Label
+                  htmlFor='tx-date-end'
+                  className='text-[11.5px] font-bold text-slate-500 mb-1.5 block pl-0.5'
+                >
+                  Tanggal Akhir
+                </Label>
                 <Input
+                  id='tx-date-end'
                   type='date'
-                  title='Tanggal akhir'
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className='h-11 flex-1 min-w-0 px-3 text-[14px] rounded-xl bg-slate-50/80 hover:bg-white focus:bg-white border-slate-200 hover:border-indigo-200 transition-all duration-200'
+                  className='h-11 px-3 text-[14px] rounded-xl bg-slate-50/80 hover:bg-white focus:bg-white border-slate-200 hover:border-indigo-200 transition-all duration-200'
                 />
               </div>
             </div>
@@ -737,11 +772,11 @@ function DetailRow({
   value: React.ReactNode;
 }) {
   return (
-    <div className='flex items-center justify-between gap-4 pl-0.5'>
-      <p className='text-xs font-extrabold text-slate-500 uppercase tracking-[0.14em] shrink-0'>
+    <div className='grid grid-cols-1 sm:grid-cols-3 sm:items-center gap-1.5 sm:gap-4 sm:py-0.5'>
+      <p className='text-[11px] font-extrabold text-slate-500 uppercase tracking-[0.14em] sm:col-span-1 sm:pr-2'>
         {label}
       </p>
-      <div className='text-sm text-slate-900 text-right'>{value}</div>
+      <div className='sm:col-span-2 sm:text-right'>{value}</div>
     </div>
   );
 }
@@ -786,7 +821,7 @@ function MiniStat({
         )}
         aria-hidden
       />
-      <CardContent className='p-3.5 md:p-4.5 relative'>
+      <CardContent className='p-4 md:p-5 relative'>
         <p className='text-[11px] md:text-xs font-bold text-slate-500 truncate uppercase tracking-[0.04em]'>
           {label}
         </p>
