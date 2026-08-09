@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package2,
   TrendingUp,
@@ -11,6 +11,10 @@ import {
   ArrowLeftRight,
   ArrowDownAZ,
   ArrowUpAZ,
+  Pin,
+  PinOff,
+  Star,
+  Sparkles,
 } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
@@ -40,6 +44,11 @@ import {
   StaggerItem,
 } from '../components/motion/StaggerContainer';
 import AnimatedCard from '../components/motion/AnimatedCard';
+import {
+  useToastSystem,
+  ToastContainer,
+  type ToastType,
+} from '../components/motion/Toast';
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -50,6 +59,9 @@ export default function DashboardPage() {
   const products = useAppStore((s) => s.products);
   const productsLoading = useAppStore((s) => s.productsLoading);
   const subscribeProducts = useAppStore((s) => s.subscribeProducts);
+  const togglePin = useAppStore((s) => s.togglePin);
+
+  const { toasts, show: showToast, dismiss } = useToastSystem();
 
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<'name' | 'stock'>('name');
@@ -72,6 +84,10 @@ export default function DashboardPage() {
     return { totalProducts, totalStock, lowStockCount, outOfStockCount };
   }, [products]);
 
+  const pinnedProducts = useMemo(() => {
+    return products.filter((p) => p.pinned);
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
     let list = [...products];
     if (search.trim()) {
@@ -82,6 +98,8 @@ export default function DashboardPage() {
       );
     }
     list.sort((a, b) => {
+      if (!!b.pinned !== !!a.pinned)
+        return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
       const cmp =
         sortKey === 'name'
           ? a.name.localeCompare(b.name, 'id-ID')
@@ -90,6 +108,29 @@ export default function DashboardPage() {
     });
     return list;
   }, [products, search, sortKey, sortAsc]);
+
+  const handleTogglePin = async (p: {
+    id: string;
+    name: string;
+    pinned?: boolean;
+  }) => {
+    try {
+      await togglePin(p.id);
+      const toastType: ToastType = p.pinned ? 'info' : 'success';
+      showToast({
+        type: toastType,
+        message: p.pinned
+          ? `Pin dilepas untuk "${p.name}"`
+          : `"${p.name}" disematkan di bagian atas Dashboard`,
+        duration: 3500,
+      });
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        message: err?.message || 'Gagal mengubah status pin.',
+      });
+    }
+  };
 
   const toggleSort = (key: 'name' | 'stock') => {
     if (sortKey === key) {
@@ -153,7 +194,8 @@ export default function DashboardPage() {
   };
 
   return (
-    <PageTransition className='space-y-5 sm:space-y-6 lg:space-y-8'>
+    <PageTransition className='space-y-5 sm:space-y-6 lg:space-y-8 relative'>
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       <motion.header
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -229,6 +271,161 @@ export default function DashboardPage() {
         ))}
       </StaggerContainer>
 
+      <AnimatePresence>
+        {!productsLoading && pinnedProducts.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            transition={{ delay: 0.18, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className='relative'
+          >
+            <Card className='overflow-hidden border-amber-200/80 shadow-[0_8px_40px_-16px_rgba(245,158,11,0.25)] bg-gradient-to-br from-amber-50/60 via-white to-orange-50/40'>
+              <div
+                className='absolute inset-0 pointer-events-none opacity-40'
+                aria-hidden
+              >
+                <div className='absolute top-0 right-0 w-60 h-60 bg-amber-200/50 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4' />
+              </div>
+              <CardHeader className='p-4 sm:p-5 lg:p-6 relative flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-amber-100/80'>
+                <div className='min-w-0 flex-1'>
+                  <CardTitle className='text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2.5 flex-wrap'>
+                    <span className='w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-amber-500/30 ring-1 ring-amber-500/20'>
+                      <Star className='w-[18px] h-[18px] fill-white' />
+                    </span>
+                    Barang Disematkan (Pinned)
+                    <Badge
+                      variant='outline'
+                      className='ml-1 text-[11px] font-extrabold border-amber-300 bg-white/80 text-amber-700 shadow-sm'
+                    >
+                      <Sparkles className='w-3 h-3 mr-1 text-amber-500' />
+                      {pinnedProducts.length} item
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className='text-xs sm:text-sm mt-2 text-amber-800/80 leading-relaxed'>
+                    Barang penting yang Anda sematkan — ditampilkan di paling
+                    atas
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className='p-3 sm:p-4 lg:p-5 relative'>
+                <StaggerContainer
+                  className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-3.5'
+                  delay={0.03}
+                >
+                  {pinnedProducts.map((p) => {
+                    const state =
+                      p.current_stock <= 0
+                        ? {
+                            label: 'Habis',
+                            variant: 'rose' as const,
+                            cls: 'bg-rose-50 text-rose-700 ring-rose-200',
+                            dot: 'bg-rose-500',
+                          }
+                        : p.current_stock <= LOW_STOCK_THRESHOLD
+                          ? {
+                              label: 'Menipis',
+                              variant: 'amber' as const,
+                              cls: 'bg-amber-50 text-amber-700 ring-amber-200',
+                              dot: 'bg-amber-500',
+                            }
+                          : {
+                              label: 'Aman',
+                              variant: 'emerald' as const,
+                              cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                              dot: 'bg-emerald-500',
+                            };
+                    return (
+                      <StaggerItem key={p.id}>
+                        <motion.div
+                          whileHover={{ y: -2, scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          transition={{
+                            type: 'spring',
+                            stiffness: 350,
+                            damping: 25,
+                          }}
+                          className='group relative p-3.5 sm:p-4 rounded-2xl border border-amber-100/90 bg-white/80 backdrop-blur-sm hover:shadow-[0_10px_30px_-12px_rgba(245,158,11,0.35)] hover:border-amber-200 transition-all duration-300 overflow-hidden'
+                        >
+                          <div className='absolute top-2.5 right-2.5 flex items-center gap-1'>
+                            <motion.button
+                              whileHover={{ scale: 1.15, rotate: -8 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => handleTogglePin(p)}
+                              className='p-1.5 rounded-lg bg-amber-50 text-amber-600 ring-1 ring-amber-200 hover:bg-amber-100 transition-colors'
+                              title='Lepas pin'
+                            >
+                              <Pin className='w-3.5 h-3.5 fill-amber-400' />
+                            </motion.button>
+                          </div>
+                          <div className='flex items-start gap-3 pr-8'>
+                            <div
+                              className={cn(
+                                'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ring-1 ring-inset shadow-sm',
+                                p.current_stock <= 0
+                                  ? 'bg-rose-50 text-rose-600 ring-rose-200'
+                                  : p.current_stock <= LOW_STOCK_THRESHOLD
+                                    ? 'bg-amber-50 text-amber-600 ring-amber-200'
+                                    : 'bg-emerald-50 text-emerald-600 ring-emerald-200',
+                              )}
+                            >
+                              <Package2 className='w-4.5 h-4.5' />
+                            </div>
+                            <div className='min-w-0 flex-1'>
+                              <p className='text-[13.5px] font-extrabold text-slate-900 leading-snug break-words line-clamp-2'>
+                                {p.name}
+                              </p>
+                              <p className='text-[11px] font-mono text-slate-500 mt-1 bg-slate-100/80 inline-block px-1.5 py-0.5 rounded border border-slate-200'>
+                                {p.id}
+                              </p>
+                            </div>
+                          </div>
+                          <div className='flex items-end justify-between mt-3.5 pt-3 border-t border-dashed border-amber-100'>
+                            <div>
+                              <p className='text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1'>
+                                Sisa Stok
+                              </p>
+                              <motion.span
+                                key={p.current_stock}
+                                initial={{ scale: 0.9, opacity: 0.6 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{
+                                  type: 'spring',
+                                  stiffness: 300,
+                                  damping: 22,
+                                }}
+                                className={cn(
+                                  'inline-flex items-center px-2.5 py-1 rounded-xl text-[14px] font-black ring-1 ring-inset',
+                                  state.cls,
+                                )}
+                              >
+                                {formatNumber(p.current_stock)}
+                              </motion.span>
+                            </div>
+                            <Badge
+                              variant={state.variant}
+                              className='text-[9.5px] font-extrabold uppercase tracking-wider px-2 py-0.5'
+                            >
+                              <span
+                                className={cn(
+                                  'w-1.5 h-1.5 rounded-full mr-1.5 animate-pulse',
+                                  state.dot,
+                                )}
+                              />
+                              {state.label}
+                            </Badge>
+                          </div>
+                        </motion.div>
+                      </StaggerItem>
+                    );
+                  })}
+                </StaggerContainer>
+              </CardContent>
+            </Card>
+          </motion.section>
+        )}
+      </AnimatePresence>
+
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -239,12 +436,13 @@ export default function DashboardPage() {
             <div className='min-w-0 flex-1'>
               <CardTitle className='text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2.5'>
                 <span className='w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center ring-1 ring-indigo-100'>
-                  <Package2 className='w-4.5 h-4.5' />
+                  <Package2 className='w-[18px] h-[18px]' />
                 </span>
                 Daftar Stok Barang
               </CardTitle>
               <CardDescription className='text-xs sm:text-sm mt-2 text-slate-500 leading-relaxed'>
-                Diperbarui secara real-time melalui WebSocket Firebase
+                Diperbarui secara real-time • klik ikon pin untuk sematkan
+                barang di atas
               </CardDescription>
             </div>
             <div className='relative w-full sm:w-80 flex-shrink-0 group'>
@@ -272,10 +470,18 @@ export default function DashboardPage() {
           </CardHeader>
 
           <div className='overflow-x-auto'>
-            <Table className='min-w-[640px]'>
+            <Table className='min-w-[700px]'>
               <TableHeader className='sticky top-0 bg-white/90 backdrop-blur-md'>
                 <TableRow className='hover:bg-transparent border-b border-slate-100'>
-                  <TableHead className='text-left px-4 sm:px-6 py-3.5 pl-4 sm:pl-6 w-[18%]'>
+                  <TableHead className='w-[56px] px-3 sm:px-5 py-3.5 text-center'>
+                    <span
+                      className='inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-amber-600'
+                      title='Sematkan barang'
+                    >
+                      <Pin className='w-3.5 h-3.5' />
+                    </span>
+                  </TableHead>
+                  <TableHead className='text-left px-3 sm:px-5 py-3.5 w-[18%]'>
                     <button
                       onClick={() => toggleSort('name')}
                       className='flex items-center gap-1.5 hover:text-slate-900 transition-colors duration-200 group'
@@ -287,7 +493,7 @@ export default function DashboardPage() {
                       />
                     </button>
                   </TableHead>
-                  <TableHead className='text-left px-4 sm:px-6 py-3.5'>
+                  <TableHead className='text-left px-3 sm:px-5 py-3.5'>
                     <button
                       onClick={() => toggleSort('name')}
                       className='flex items-center gap-1.5 hover:text-slate-900 transition-colors duration-200 whitespace-nowrap group'
@@ -299,7 +505,7 @@ export default function DashboardPage() {
                       />
                     </button>
                   </TableHead>
-                  <TableHead className='text-right px-4 sm:px-6 py-3.5 pr-4 sm:pr-6 w-[20%]'>
+                  <TableHead className='text-right px-3 sm:px-5 py-3.5 pr-4 sm:pr-6 w-[20%]'>
                     <button
                       onClick={() => toggleSort('stock')}
                       className='inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors duration-200 whitespace-nowrap group ml-auto'
@@ -321,13 +527,16 @@ export default function DashboardPage() {
                       aria-hidden
                       className='hover:bg-transparent'
                     >
-                      <TableCell className='px-4 sm:px-6 py-4'>
+                      <TableCell className='px-3 sm:px-5 py-4 text-center'>
+                        <Skeleton className='h-8 w-8 mx-auto rounded-lg' />
+                      </TableCell>
+                      <TableCell className='px-3 sm:px-5 py-4'>
                         <Skeleton className='h-4 w-20 sm:w-24' />
                       </TableCell>
-                      <TableCell className='px-4 sm:px-6 py-4'>
+                      <TableCell className='px-3 sm:px-5 py-4'>
                         <Skeleton className='h-4 w-40 sm:w-56' />
                       </TableCell>
-                      <TableCell className='px-4 sm:px-6 py-4 text-right'>
+                      <TableCell className='px-3 sm:px-5 py-4 text-right'>
                         <Skeleton className='h-7 w-14 sm:w-16 rounded-lg ml-auto' />
                       </TableCell>
                     </TableRow>
@@ -335,7 +544,7 @@ export default function DashboardPage() {
                 ) : filteredProducts.length === 0 ? (
                   <TableRow className='hover:bg-transparent'>
                     <TableCell
-                      colSpan={3}
+                      colSpan={4}
                       className='px-4 sm:px-6 py-14 sm:py-18'
                     >
                       <div className='text-center'>
@@ -402,11 +611,40 @@ export default function DashboardPage() {
                         initial='hidden'
                         animate='visible'
                         whileHover={{
-                          backgroundColor: 'rgba(248, 250, 252, 0.9)',
+                          backgroundColor: p.pinned
+                            ? 'rgba(99, 102, 241, 0.04)'
+                            : 'rgba(248, 250, 252, 0.9)',
                         }}
-                        className='group border-b border-slate-100'
+                        className={cn(
+                          'group border-b border-slate-100 transition-colors',
+                          p.pinned &&
+                            'bg-gradient-to-r from-amber-50/50 via-transparent to-transparent',
+                        )}
                       >
-                        <TableCell className='px-4 sm:px-6 py-3.5 sm:py-4 whitespace-nowrap'>
+                        <TableCell className='px-3 sm:px-5 py-3.5 sm:py-4 text-center whitespace-nowrap'>
+                          <motion.button
+                            whileHover={{
+                              scale: 1.2,
+                              rotate: p.pinned ? 8 : -8,
+                            }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => handleTogglePin(p)}
+                            className={cn(
+                              'p-2 rounded-lg transition-all duration-200',
+                              p.pinned
+                                ? 'bg-amber-50 text-amber-600 ring-1 ring-amber-200 hover:bg-amber-100 shadow-sm shadow-amber-500/10'
+                                : 'text-slate-300 hover:text-amber-500 hover:bg-amber-50/80',
+                            )}
+                            title={p.pinned ? 'Lepas pin' : 'Sematkan barang'}
+                          >
+                            {p.pinned ? (
+                              <Pin className='w-4 h-4 fill-amber-400' />
+                            ) : (
+                              <PinOff className='w-4 h-4' />
+                            )}
+                          </motion.button>
+                        </TableCell>
+                        <TableCell className='px-3 sm:px-5 py-3.5 sm:py-4 whitespace-nowrap'>
                           <motion.code
                             whileHover={{ scale: 1.03 }}
                             className='text-[11px] sm:text-xs font-mono text-slate-600 bg-slate-100/80 group-hover:bg-slate-100 px-2.5 py-1.5 rounded-lg ring-1 ring-slate-200/70 inline-block transition-colors duration-200'
@@ -414,7 +652,7 @@ export default function DashboardPage() {
                             {p.id}
                           </motion.code>
                         </TableCell>
-                        <TableCell className='px-4 sm:px-6 py-3.5 sm:py-4'>
+                        <TableCell className='px-3 sm:px-5 py-3.5 sm:py-4'>
                           <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3.5'>
                             <motion.span
                               whileHover={{ x: 2 }}
@@ -422,15 +660,26 @@ export default function DashboardPage() {
                             >
                               {p.name}
                             </motion.span>
-                            <Badge
-                              variant={state.variant}
-                              className='text-[10px] font-extrabold uppercase tracking-[0.1em] px-2.5 py-1 w-fit'
-                            >
-                              {state.label}
-                            </Badge>
+                            <div className='flex items-center gap-2 flex-wrap'>
+                              {p.pinned && (
+                                <Badge
+                                  variant='outline'
+                                  className='text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 border-amber-200 bg-amber-50 text-amber-700 shadow-sm'
+                                >
+                                  <Pin className='w-3 h-3 mr-1 fill-amber-400' />
+                                  Pinned
+                                </Badge>
+                              )}
+                              <Badge
+                                variant={state.variant}
+                                className='text-[10px] font-extrabold uppercase tracking-[0.1em] px-2.5 py-1 w-fit'
+                              >
+                                {state.label}
+                              </Badge>
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell className='px-4 sm:px-6 py-3.5 sm:py-4 text-right whitespace-nowrap'>
+                        <TableCell className='px-3 sm:px-5 py-3.5 sm:py-4 text-right whitespace-nowrap pr-4 sm:pr-6'>
                           <motion.span
                             initial={{ scale: 0.9 }}
                             animate={{ scale: 1 }}

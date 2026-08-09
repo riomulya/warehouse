@@ -11,6 +11,7 @@ export interface Product {
   name: string;
   current_stock: number;
   updated_at: number;
+  pinned?: boolean;
 }
 
 export type TransactionType = 'IN' | 'OUT';

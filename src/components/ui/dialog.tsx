@@ -14,23 +14,15 @@ const DialogOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay> & {
     open?: boolean;
   }
->(({ className, open, ...props }, ref) => (
-  <DialogPrimitive.Overlay ref={ref} asChild {...props}>
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className={cn(
-            'fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm',
-            className
-          )}
-        />
-      )}
-    </AnimatePresence>
-  </DialogPrimitive.Overlay>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Overlay
+    ref={ref}
+    className={cn(
+      'fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm',
+      className,
+    )}
+    {...props}
+  />
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
@@ -41,32 +33,42 @@ const DialogContent = React.forwardRef<
   }
 >(({ className, children, open, ...props }, ref) => (
   <DialogPortal>
-    <DialogOverlay open={open} />
-    <DialogPrimitive.Content ref={ref} asChild {...props}>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{
-              duration: 0.25,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-            className={cn(
-              'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-slate-200 bg-white p-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-hidden',
-              className
-            )}
-          >
-            {children}
-            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:ring-offset-2">
-              <X className="w-5 h-5" />
-              <span className="sr-only">Close</span>
-            </DialogPrimitive.Close>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </DialogPrimitive.Content>
+    <AnimatePresence>
+      {open && (
+        <>
+          <DialogPrimitive.Overlay asChild forceMount>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className='fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm'
+            />
+          </DialogPrimitive.Overlay>
+          <DialogPrimitive.Content ref={ref} asChild forceMount {...props}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{
+                duration: 0.25,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className={cn(
+                'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-slate-200 bg-white p-0 shadow-2xl rounded-2xl max-h-[90vh] overflow-hidden',
+                className,
+              )}
+            >
+              {children}
+              <DialogPrimitive.Close className='absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:ring-offset-2'>
+                <X className='w-5 h-5' />
+                <span className='sr-only'>Close</span>
+              </DialogPrimitive.Close>
+            </motion.div>
+          </DialogPrimitive.Content>
+        </>
+      )}
+    </AnimatePresence>
   </DialogPortal>
 ));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
@@ -78,7 +80,7 @@ const DialogHeader = ({
   <div
     className={cn(
       'flex flex-col space-y-1.5 px-6 py-5 border-b border-slate-100 text-left sm:text-left',
-      className
+      className,
     )}
     {...props}
   />
@@ -92,7 +94,7 @@ const DialogFooter = ({
   <div
     className={cn(
       'flex flex-col-reverse gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/50 sm:flex-row sm:justify-end',
-      className
+      className,
     )}
     {...props}
   />
@@ -107,7 +109,7 @@ const DialogTitle = React.forwardRef<
     ref={ref}
     className={cn(
       'text-lg font-bold leading-none tracking-tight text-slate-900',
-      className
+      className,
     )}
     {...props}
   />

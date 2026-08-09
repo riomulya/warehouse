@@ -15,6 +15,7 @@ import {
   X,
   Warehouse,
   ChevronRight,
+  Package2,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
@@ -78,6 +79,13 @@ export default function AppLayout() {
       icon: LayoutDashboard,
       roles: ['admin', 'management'],
       color: 'indigo',
+    },
+    {
+      to: '/products',
+      label: 'Kelola Barang',
+      icon: Package2,
+      roles: ['admin'],
+      color: 'teal',
     },
     {
       to: '/input-transaction',

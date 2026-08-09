@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import InputTransactionPage from './pages/InputTransactionPage';
 import TransactionLogsPage from './pages/TransactionLogsPage';
+import ProductsPage from './pages/ProductsPage';
 
 function AppRoutes() {
   useAuthListener();
@@ -20,6 +21,14 @@ function AppRoutes() {
         }
       >
         <Route index element={<DashboardPage />} />
+        <Route
+          path="products"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ProductsPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="input-transaction"
           element={
