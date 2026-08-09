@@ -16,6 +16,8 @@ import {
   Warehouse,
   ChevronRight,
   Package2,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
@@ -24,6 +26,15 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Avatar, AvatarFallback } from './ui/avatar';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from './ui/dialog';
 
 const SIDEBAR_WIDTH = 'w-72';
 
@@ -42,6 +53,8 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -66,10 +79,22 @@ export default function AppLayout() {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  const handleLogout = async () => {
+  const handleLogoutClick = () => {
     setMobileOpen(false);
-    await logout();
-    navigate('/login', { replace: true });
+    setLogoutOpen(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      setLogoutOpen(false);
+      navigate('/login', { replace: true });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const navItems = [
@@ -134,7 +159,7 @@ export default function AppLayout() {
         className='fixed top-[max(env(safe-area-inset-top),0.75rem)] left-[max(env(safe-area-inset-left),0.75rem)] z-40 md:hidden bg-white/95 backdrop-blur-lg shadow-lg shadow-slate-200/60 border-slate-200 gap-2.5'
         aria-label='Buka menu'
       >
-        <Menu className='w-4.5 h-4.5' />
+        <Menu className='w-[18px] h-[18px]' />
         <span className='text-sm font-semibold pr-1'>Menu</span>
       </Button>
 
@@ -333,7 +358,7 @@ export default function AppLayout() {
               <Separator className='opacity-60' />
 
               <Button
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
                 variant='ghost'
                 className='w-full flex items-center justify-start gap-3 px-3.5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-red-50 hover:text-red-600 hover:ring-1 hover:ring-red-200 transition-all duration-200 rounded-xl h-auto'
               >
@@ -349,6 +374,76 @@ export default function AppLayout() {
           </motion.aside>
         )}
       </AnimatePresence>
+
+      <Dialog
+        open={logoutOpen}
+        onOpenChange={(o) => !isLoggingOut && setLogoutOpen(o)}
+      >
+        <DialogContent open={logoutOpen} className='sm:max-w-md'>
+          <DialogHeader className='pb-3'>
+            <div className='flex items-start gap-4 sm:gap-5'>
+              <motion.div
+                initial={{ scale: 0.6, opacity: 0, rotate: -10 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 400,
+                  damping: 20,
+                  delay: 0.05,
+                }}
+                className='relative shrink-0'
+              >
+                <div className='absolute inset-0 rounded-2xl bg-gradient-to-br from-red-400 to-orange-500 blur-xl opacity-30 scale-105' />
+                <div className='relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-red-500 via-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/25 ring-1 ring-red-500/20'>
+                  <AlertTriangle className='w-7 h-7 sm:w-8 sm:h-8 text-white drop-shadow-sm' />
+                </div>
+              </motion.div>
+              <div className='min-w-0 flex-1 pt-1'>
+                <DialogTitle className='text-lg sm:text-xl font-extrabold text-slate-900 leading-tight'>
+                  Keluar dari akun?
+                </DialogTitle>
+                <DialogDescription className='text-sm sm:text-[15px] text-slate-500 mt-2 leading-relaxed'>
+                  Kamu akan dikeluarkan dari sistem Warehouse Management.
+                  <span className='block mt-1.5'>
+                    Pastikan semua data transaksi sudah tersimpan ya.
+                  </span>
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className='gap-2.5 sm:gap-3 pt-2 sm:pt-3'>
+            <DialogClose asChild>
+              <Button
+                type='button'
+                variant='outline'
+                disabled={isLoggingOut}
+                className='flex-1 h-11 sm:h-12 rounded-xl text-[14px] font-bold border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 transition-all duration-200'
+              >
+                <span>Batal</span>
+              </Button>
+            </DialogClose>
+            <motion.button
+              whileHover={!isLoggingOut ? { scale: 1.015, y: -0.5 } : {}}
+              whileTap={!isLoggingOut ? { scale: 0.985 } : {}}
+              onClick={handleLogoutConfirm}
+              disabled={isLoggingOut}
+              className='flex-1 h-11 sm:h-12 rounded-xl text-[14px] font-bold text-white inline-flex items-center justify-center gap-2 bg-gradient-to-br from-red-500 via-orange-500 to-red-600 shadow-lg shadow-red-500/25 hover:shadow-red-500/35 ring-1 ring-inset ring-white/20 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300'
+            >
+              {isLoggingOut ? (
+                <>
+                  <Loader2 className='w-[18px] h-[18px] animate-spin' />
+                  <span>Keluar...</span>
+                </>
+              ) : (
+                <>
+                  <LogOut className='w-[18px] h-[18px]' />
+                  <span>Ya, Keluar</span>
+                </>
+              )}
+            </motion.button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <main
         className='md:ml-72 min-h-[100dvh] flex flex-col'
